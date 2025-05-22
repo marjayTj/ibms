@@ -338,67 +338,55 @@
 
     //PIE CHART
 
-    <?php
-    // Sample query to count male and female
-    $sql = "SELECT pi_sex, COUNT(*) AS count FROM tbl_personal_info GROUP BY pi_sex";
-    $result = $conn->query($sql);
+<?php
+$sql = "SELECT tbl_property_commodities.pc_type, COUNT(tbl_property_commodities.pc_code) AS living 
+        FROM tbl_property_commodities
+        LEFT JOIN tbl_animal_products ON tbl_property_commodities.pc_code = tbl_animal_products.pc_code
+        LEFT JOIN tbl_products ON tbl_property_commodities.pc_code = tbl_products.pc_code
+        LEFT JOIN tbl_production_facilities ON tbl_property_commodities.pc_code = tbl_production_facilities.pc_code
+        GROUP BY tbl_property_commodities.pc_type";
 
-    $labels = [];
-    $data = [];
+$result = $conn->query($sql);
 
-    while ($row = $result->fetch_assoc()) {
-      $labels[] = $row['pi_sex'];
-      $data[] = $row['count'];
-    }
-    ?>
-    var pieChartCanvas = $("#genderPieChart").get(0).getContext("2d");
+$pieData = [];
+$colors = ['#f56954', '#00a65a', '#f39c12', '#00c0ef', '#3c8dbc', '#d2d6de']; // sample colors
+$i = 0;
 
-    var pieData = [{
-        value: 120,
-        color: "#f56954",
-        highlight: "#f56954",
-        label: "Farmer"
-      },
-      {
-        value: 100,
-        color: "#00a65a",
-        highlight: "#00a65a",
-        label: "Private Employee"
-      },
-      {
-        value: 150,
-        color: "#ff0000", // Corrected hex code
-        highlight: "#ff0000", // Corrected hex code
-        label: "Government Employee"
-      }
-  
+while ($row = $result->fetch_assoc()) {
+    $pieData[] = [
+        "value" => (int)$row['living'],
+        "color" => $colors[$i % count($colors)],
+        "highlight" => $colors[$i % count($colors)],
+        "label" => $row['pc_type']
     ];
+    $i++;
+}
+?>
+ var pieChartCanvas = $("#genderPieChart").get(0).getContext("2d");
+
+    var pieData = <?php echo json_encode($pieData, JSON_NUMERIC_CHECK); ?>;
 
     var pieOptions = {
-      //Boolean - Whether we should show a stroke on each segment
-      segmentShowStroke: true,
-      segmentStrokeColor: "#fff",
-      segmentStrokeWidth: 2,
-      percentageInnerCutout: 0, // 0 for Pie, >0 for Doughnut
-      animationSteps: 100,
-      animationEasing: "easeOutBounce",
-      animateRotate: true,
-      animateScale: false,
-      responsive: true,
-      maintainAspectRatio: false,
-      // String - Template string for generating tooltips
-      tooltipTemplate: "<%= label %>: <%= value %>",
-      // String - Template string for generating legend
-      legendTemplate: '<ul class="<%=name.toLowerCase()%>-legend">' +
-        '<% for (var i=0; i<segments.length; i++){%>' +
-        '<li><span style="background-color:<%=segments[i].fillColor%>"></span>' +
-        '<%if(segments[i].label){%><%=segments[i].label%><%}%> (<%=segments[i].value%>)</li><%}%></ul>'
+        segmentShowStroke: true,
+        segmentStrokeColor: "#fff",
+        segmentStrokeWidth: 2,
+        percentageInnerCutout: 0,
+        animationSteps: 100,
+        animationEasing: "easeOutBounce",
+        animateRotate: true,
+        animateScale: false,
+        responsive: true,
+        maintainAspectRatio: false,
+        tooltipTemplate: "<%= label %>: <%= value %>",
+        legendTemplate:
+            '<ul class="<%=name.toLowerCase()%>-legend">' +
+            '<% for (var i=0; i<segments.length; i++){%>' +
+            '<li><span style="background-color:<%=segments[i].fillColor%>"></span>' +
+            '<%if(segments[i].label){%><%=segments[i].label%><%}%> (<%=segments[i].value%>)</li><%}%></ul>'
     };
 
-    // Create pie chart
     var pieChart = new Chart(pieChartCanvas).Pie(pieData, pieOptions);
 
-    // Generate and append the legend to the box-footer
     $("#pie-chart-legend").html(pieChart.generateLegend());
     //end of pie chart    
 
